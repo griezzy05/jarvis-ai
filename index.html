@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvis - Personal AI Operations Dashboard</title>
+    <title>Jarvis - AI Voice Dashboard</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -14,6 +14,7 @@
             min-height: 100vh;
         }
         .container { max-width: 1600px; margin: 0 auto; }
+        
         .header {
             display: flex;
             justify-content: space-between;
@@ -49,6 +50,103 @@
             animation: pulse 2s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Voice Control Section */
+        .voice-section {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #334155;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .voice-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 24px;
+        }
+        .voice-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid #60a5fa;
+            background: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
+            cursor: pointer;
+            font-size: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(96, 165, 250, 0.3);
+        }
+        .voice-button:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%);
+            box-shadow: 0 0 50px rgba(96, 165, 250, 0.5);
+            transform: scale(1.05);
+        }
+        .voice-button.listening {
+            animation: listening 0.6s infinite;
+            background: linear-gradient(135deg, #dc2626 0%, #1e293b 100%);
+            border-color: #dc2626;
+            box-shadow: 0 0 50px rgba(220, 38, 38, 0.5);
+        }
+        @keyframes listening {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .voice-status {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+            min-height: 20px;
+        }
+        .voice-status.active {
+            color: #60a5fa;
+            font-weight: 600;
+        }
+        .voice-transcript {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            min-height: 60px;
+            text-align: left;
+        }
+        .transcript-label {
+            font-size: 11px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .transcript-text {
+            font-size: 14px;
+            color: #60a5fa;
+            font-style: italic;
+        }
+        .voice-response {
+            background: #064e3b;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            min-height: 60px;
+        }
+        .response-label {
+            font-size: 11px;
+            color: #86efac;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .response-text {
+            font-size: 14px;
+            color: #86efac;
+        }
+        
         .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -61,18 +159,11 @@
             border-radius: 12px;
             padding: 24px;
             text-align: center;
-            transition: all 0.3s;
-        }
-        .kpi-card:hover {
-            border-color: #60a5fa;
-            box-shadow: 0 8px 24px rgba(96, 165, 250, 0.15);
-            transform: translateY(-4px);
         }
         .kpi-label {
             font-size: 12px;
             color: #94a3b8;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
             margin-bottom: 12px;
             font-weight: 600;
         }
@@ -85,25 +176,18 @@
         .kpi-subtext {
             font-size: 13px;
             color: #64748b;
-            margin-bottom: 16px;
         }
         .progress-bar {
             height: 6px;
             background: #334155;
             border-radius: 3px;
             overflow: hidden;
-            margin-bottom: 12px;
+            margin: 12px 0;
         }
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, #3b82f6, #60a5fa);
         }
-        .kpi-trend {
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .trend-up { color: #10b981; }
-        .trend-down { color: #ef4444; }
         .section-title {
             font-size: 20px;
             font-weight: 700;
@@ -137,11 +221,6 @@
             font-size: 13px;
             color: #94a3b8;
             line-height: 1.5;
-            margin-bottom: 10px;
-        }
-        .alert-time {
-            font-size: 11px;
-            color: #64748b;
         }
         .actions-section {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -178,31 +257,6 @@
         }
         .priority-high { background: #7f1d1d; color: #fecaca; }
         .priority-medium { background: #78350f; color: #fcd34d; }
-        .priority-low { background: #1e3a1f; color: #bbf7d0; }
-        .business-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin: 32px 0;
-        }
-        .business-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-        .business-icon { font-size: 40px; margin-bottom: 12px; }
-        .business-name { font-weight: 700; font-size: 14px; color: #e2e8f0; }
-        .business-value { font-size: 20px; font-weight: 800; color: #3b82f6; margin-top: 8px; }
-        .footer {
-            text-align: center;
-            padding: 24px;
-            color: #64748b;
-            font-size: 12px;
-            border-top: 1px solid #334155;
-            margin-top: 48px;
-        }
     </style>
 </head>
 <body>
@@ -211,10 +265,28 @@
             <div class="logo">🚀 Jarvis</div>
             <div class="status">
                 <div class="status-dot"></div>
-                <span>System Online • Last sync 2 min ago</span>
+                <span>AI Voice Enabled • Ready</span>
             </div>
         </div>
         
+        <!-- Voice Control Section -->
+        <div class="voice-section">
+            <div class="voice-title">🎙️ Talk to Jarvis</div>
+            <button class="voice-button" id="voiceBtn" title="Click to start speaking">🎤</button>
+            <div class="voice-status" id="voiceStatus">Click the microphone to speak</div>
+            
+            <div class="voice-transcript">
+                <div class="transcript-label">You said:</div>
+                <div class="transcript-text" id="transcript">Waiting for your voice...</div>
+            </div>
+            
+            <div class="voice-response">
+                <div class="response-label">Jarvis responds:</div>
+                <div class="response-text" id="response">Ready to help. Ask me anything!</div>
+            </div>
+        </div>
+        
+        <!-- Metrics Section -->
         <div class="section-title">📊 Your Metrics</div>
         <div class="kpi-grid">
             <div class="kpi-card">
@@ -222,78 +294,45 @@
                 <div class="kpi-value">72%</div>
                 <div class="progress-bar"><div class="progress-fill" style="width: 72%;"></div></div>
                 <div class="kpi-subtext">180/250 questions mastered</div>
-                <div class="kpi-trend trend-up">↑ +8% this week</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Study Hours/Week</div>
                 <div class="kpi-value">4 / 5</div>
                 <div class="progress-bar"><div class="progress-fill" style="width: 80%;"></div></div>
                 <div class="kpi-subtext">Target: 5+ hours</div>
-                <div class="kpi-trend trend-up">↑ On track</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Loytex Commission</div>
                 <div class="kpi-value">KSh 1.5K</div>
                 <div class="progress-bar"><div class="progress-fill" style="width: 75%;"></div></div>
                 <div class="kpi-subtext">This month</div>
-                <div class="kpi-trend trend-up">↑ +12%</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">FarmLink Signups</div>
                 <div class="kpi-value">18 / 30</div>
                 <div class="progress-bar"><div class="progress-fill" style="width: 60%;"></div></div>
                 <div class="kpi-subtext">Pilot target</div>
-                <div class="kpi-trend trend-down">↓ Stalled 2 days</div>
             </div>
         </div>
         
-        <div class="section-title">💼 Business Overview</div>
-        <div class="business-grid">
-            <div class="business-card">
-                <div class="business-icon">🌾</div>
-                <div class="business-name">FarmLink</div>
-                <div class="business-value">KSh 4.2K</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Weekly Revenue</div>
-            </div>
-            <div class="business-card">
-                <div class="business-icon">👗</div>
-                <div class="business-name">Loytex Closet</div>
-                <div class="business-value">KSh 1.5K</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Your Commission</div>
-            </div>
-            <div class="business-card">
-                <div class="business-icon">💻</div>
-                <div class="business-name">Freelance Dev</div>
-                <div class="business-value">KSh 4.3K</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Weekly Revenue</div>
-            </div>
-            <div class="business-card">
-                <div class="business-icon">📚</div>
-                <div class="business-name">CCNA Study</div>
-                <div class="business-value">72%</div>
-                <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Completion Rate</div>
-            </div>
-        </div>
-        
+        <!-- Alerts Section -->
         <div class="section-title">🚨 AI-Detected Alerts</div>
         <div class="alerts-grid">
             <div class="alert-card alert-critical">
                 <div class="alert-title">⚠️ FarmLink Growth Stalled</div>
-                <div class="alert-desc">No new customers for 2 days. AI recommends social media campaign or WhatsApp outreach.</div>
-                <div class="alert-time">Detected 4 hours ago</div>
+                <div class="alert-desc">No new customers for 2 days. AI recommends social media campaign.</div>
             </div>
             <div class="alert-card alert-warning">
                 <div class="alert-title">📚 Study Hours Below Target</div>
                 <div class="alert-desc">This week: 4 hours. Target: 5+. AI recommends 2-hour weekend study block.</div>
-                <div class="alert-time">Detected 2 hours ago</div>
             </div>
             <div class="alert-card alert-warning">
                 <div class="alert-title">🔧 Loytex Maintenance Overdue</div>
                 <div class="alert-desc">Monthly maintenance 8 days overdue. SSL check, analytics, backup needed.</div>
-                <div class="alert-time">Detected today</div>
             </div>
         </div>
         
+        <!-- Actions Section -->
         <div class="section-title">✅ Action Queue</div>
         <div class="actions-section">
             <div class="action-item">
@@ -317,25 +356,113 @@
                 </div>
                 <div class="priority-badge priority-medium">MED</div>
             </div>
-            <div class="action-item">
-                <div>
-                    <div class="action-domain">Avios</div>
-                    <div class="action-title">Complete networking lab work</div>
-                </div>
-                <div class="priority-badge priority-medium">MED</div>
-            </div>
-            <div class="action-item">
-                <div>
-                    <div class="action-domain">Ministry</div>
-                    <div class="action-title">Prepare Sunday youth sermon</div>
-                </div>
-                <div class="priority-badge priority-low">LOW</div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <strong>💡 TIP:</strong> Voice control coming soon!
         </div>
     </div>
+    
+    <script>
+        const voiceBtn = document.getElementById('voiceBtn');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const transcript = document.getElementById('transcript');
+        const response = document.getElementById('response');
+        
+        // Web Speech API setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        // Speech Synthesis
+        const synth = window.speechSynthesis;
+        
+        let isListening = false;
+        
+        voiceBtn.addEventListener('click', () => {
+            if (!isListening) {
+                recognition.start();
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceStatus.textContent = 'Listening...';
+                voiceStatus.classList.add('active');
+                transcript.textContent = 'Processing your voice...';
+            } else {
+                recognition.stop();
+            }
+        });
+        
+        recognition.addEventListener('result', (event) => {
+            let interimTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcriptSegment = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    transcript.textContent = transcriptSegment;
+                    processCommand(transcriptSegment);
+                } else {
+                    interimTranscript += transcriptSegment;
+                }
+            }
+            if (interimTranscript) {
+                transcript.textContent = interimTranscript;
+            }
+        });
+        
+        recognition.addEventListener('end', () => {
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceStatus.textContent = 'Ready to listen again';
+            voiceStatus.classList.remove('active');
+        });
+        
+        recognition.addEventListener('error', (event) => {
+            response.textContent = 'Error: ' + event.error;
+            voiceStatus.textContent = 'Error occurred';
+        });
+        
+        // Command Processing
+        function processCommand(command) {
+            const cmd = command.toLowerCase();
+            let reply = '';
+            
+            if (cmd.includes('ccna') || cmd.includes('progress')) {
+                reply = "You're at 72 percent on CCNA. Your next topic is Security and VPNs. You need 2 more weeks to master this topic.";
+            }
+            else if (cmd.includes('study') || cmd.includes('hours')) {
+                reply = "This week you've studied 4 hours. Your target is 5 hours. You need one more hour this weekend. Schedule a 2 hour block on Sunday morning.";
+            }
+            else if (cmd.includes('loytex') || cmd.includes('commission')) {
+                reply = "Your Loytex commission this month is 1,500 Kenyan Shillings. You've made 52 sales. Your average earnings per order is 28 Kenyan Shillings.";
+            }
+            else if (cmd.includes('farmlink') || cmd.includes('signup')) {
+                reply = "FarmLink has 18 new signups. Your target is 30 by end of month. You're at 60 percent. You need 12 more customers. No new signups in the last 2 days. I recommend a WhatsApp marketing campaign in Kiambu.";
+            }
+            else if (cmd.includes('alert') || cmd.includes('problem')) {
+                reply = "You have 3 active alerts. FarmLink signups have stalled. Your study hours are below target. And Loytex maintenance is 8 days overdue. I recommend focusing on the farm link growth issue first.";
+            }
+            else if (cmd.includes('revenue') || cmd.includes('money')) {
+                reply = "Your weekly revenue is 8,500 Kenyan Shillings. This month you've earned 34,000. At your current rate, you'll earn around 408,000 by end of year. Farm Link is your strongest revenue stream at 4,200 per week.";
+            }
+            else if (cmd.includes('hello') || cmd.includes('hi')) {
+                reply = "Hello! I'm Jarvis, your AI operations assistant. I can tell you about your CCNA progress, business metrics, alerts, or recommendations. What would you like to know?";
+            }
+            else {
+                reply = "I understood: '" + command + "'. I can help you with CCNA progress, study hours, business metrics, or alerts. What would you like to know?";
+            }
+            
+            response.textContent = reply;
+            speak(reply);
+        }
+        
+        // Text to Speech
+        function speak(text) {
+            if (synth.speaking) {
+                synth.cancel();
+            }
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            synth.speak(utterance);
+        }
+    </script>
 </body>
 </html>
