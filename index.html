@@ -46,25 +46,24 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-        .status.listening {
+        .status.waiting {
             background: #064e3b;
             color: #86efac;
         }
-        .status.listening .status-dot {
+        .status.waiting .status-dot {
             background: #10b981;
         }
-        .status.processing {
-            background: #1e3a1f;
-            color: #86efac;
+        .status.active {
+            background: #7f1d1d;
+            color: #fecaca;
         }
-        .status.processing .status-dot {
-            background: #10b981;
-            animation: pulse-fast 0.6s infinite;
+        .status.active .status-dot {
+            background: #dc2626;
+            animation: pulse-fast 0.4s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.3); } }
         
-        /* Voice Control Section */
         .voice-section {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 2px solid #334155;
@@ -99,36 +98,14 @@
             position: relative;
         }
         .listening-indicator.active {
-            animation: listening-pulse 0.6s infinite;
+            animation: listening-pulse 0.4s infinite;
             background: linear-gradient(135deg, #dc2626 0%, #1e293b 100%);
             border-color: #dc2626;
             box-shadow: 0 0 50px rgba(220, 38, 38, 0.5);
         }
         @keyframes listening-pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(220, 38, 38, 0.3); }
-            50% { transform: scale(1.1); box-shadow: 0 0 50px rgba(220, 38, 38, 0.6); }
-        }
-        .sound-waves {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-        }
-        .wave {
-            position: absolute;
-            border-radius: 50%;
-            border: 2px solid #dc2626;
-            opacity: 0;
-        }
-        .listening-indicator.active .wave {
-            animation: sound-wave 1.5s infinite;
-        }
-        .wave:nth-child(1) { animation-delay: 0s; }
-        .wave:nth-child(2) { animation-delay: 0.3s; }
-        .wave:nth-child(3) { animation-delay: 0.6s; }
-        @keyframes sound-wave {
-            0% { width: 100%; height: 100%; opacity: 0.8; }
-            100% { width: 200%; height: 200%; opacity: 0; top: -50%; left: -50%; }
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
         
         .voice-status {
@@ -140,6 +117,9 @@
         }
         .voice-status.active {
             color: #60a5fa;
+        }
+        .voice-status.in-conversation {
+            color: #10b981;
         }
         
         .voice-transcript {
@@ -183,6 +163,16 @@
             font-size: 14px;
             color: #86efac;
             line-height: 1.5;
+        }
+        
+        .timeout-timer {
+            font-size: 12px;
+            color: #f59e0b;
+            margin-top: 12px;
+        }
+        .timeout-timer.warning {
+            color: #dc2626;
+            font-weight: 600;
         }
         
         .kpi-grid {
@@ -301,25 +291,18 @@
     <div class="container">
         <div class="header">
             <div class="logo">🚀 Jarvis</div>
-            <div class="status listening" id="status">
+            <div class="status waiting" id="status">
                 <div class="status-dot"></div>
-                <span id="statusText">Always Listening</span>
+                <span id="statusText">Listening for "Jarvis"</span>
             </div>
         </div>
         
         <!-- Voice Control Section -->
         <div class="voice-section">
             <div class="voice-title">🎙️ Talk to Jarvis</div>
-            <div class="voice-subtitle">Say "Jarvis" then your command</div>
+            <div class="voice-subtitle">Say "Jarvis" then give commands</div>
             
-            <div class="listening-indicator" id="indicator">
-                🎤
-                <div class="sound-waves">
-                    <div class="wave" style="width: 80%; height: 80%; top: 10%; left: 10%;"></div>
-                    <div class="wave" style="width: 120%; height: 120%; top: -10%; left: -10%;"></div>
-                    <div class="wave" style="width: 160%; height: 160%; top: -30%; left: -30%;"></div>
-                </div>
-            </div>
+            <div class="listening-indicator" id="indicator">🎤</div>
             
             <div class="voice-status" id="voiceStatus">Listening for "Jarvis"...</div>
             
@@ -331,6 +314,7 @@
             <div class="voice-response">
                 <div class="response-label">Jarvis responds:</div>
                 <div class="response-text" id="response">I'm ready! Say "Jarvis" followed by your question.</div>
+                <div class="timeout-timer" id="timer"></div>
             </div>
         </div>
         
@@ -411,8 +395,10 @@
         const indicator = document.getElementById('indicator');
         const voiceStatus = document.getElementById('voiceStatus');
         const statusText = document.getElementById('statusText');
+        const statusEl = document.getElementById('status');
         const transcript = document.getElementById('transcript');
         const response = document.getElementById('response');
+        const timerEl = document.getElementById('timer');
         
         // Web Speech API setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -424,8 +410,9 @@
         // Speech Synthesis
         const synth = window.speechSynthesis;
         
-        let isListeningForWakeWord = true;
-        let awaitingCommand = false;
+        let inConversation = false;
+        let timeoutId = null;
+        const TIMEOUT_DURATION = 120000; // 2 minutes in milliseconds
         
         // Start listening immediately
         recognition.start();
@@ -437,37 +424,38 @@
                 const transcriptSegment = event.results[i][0].transcript.toLowerCase();
                 
                 if (event.results[i].isFinal) {
-                    // WAKE WORD DETECTION
-                    if (isListeningForWakeWord && transcriptSegment.includes('jarvis')) {
-                        transcript.textContent = 'Wake word detected! Listening for command...';
-                        voiceStatus.textContent = 'Processing your command...';
+                    // WAKE WORD DETECTION (or already in conversation)
+                    if (!inConversation && transcriptSegment.includes('jarvis')) {
+                        // Entering conversation mode
+                        inConversation = true;
                         indicator.classList.add('active');
-                        isListeningForWakeWord = false;
-                        awaitingCommand = true;
-                        response.textContent = 'I heard you! What would you like?';
+                        statusEl.classList.remove('waiting');
+                        statusEl.classList.add('active');
+                        statusText.textContent = 'In Conversation Mode';
+                        voiceStatus.textContent = 'Listening for commands...';
+                        voiceStatus.classList.add('in-conversation');
+                        transcript.textContent = 'Detected "Jarvis". Ready for commands!';
+                        response.textContent = 'I\'m listening! Give me your command.';
+                        startTimeout();
                         
-                    } else if (awaitingCommand) {
-                        // COMMAND PROCESSING
+                    } else if (inConversation) {
+                        // Already in conversation - process command immediately
                         transcript.textContent = transcriptSegment;
-                        indicator.classList.remove('active');
                         voiceStatus.textContent = 'Processing...';
                         processCommand(transcriptSegment);
-                        awaitingCommand = false;
-                        isListeningForWakeWord = true;
-                        voiceStatus.textContent = 'Listening for "Jarvis"...';
+                        resetTimeout(); // Reset timeout on each command
                     }
                 } else {
                     interimTranscript += transcriptSegment + ' ';
                 }
             }
             
-            if (interimTranscript && !awaitingCommand) {
-                transcript.textContent = interimTranscript;
+            if (interimTranscript) {
+                transcript.textContent = interimTranscript + '...';
             }
         });
         
         recognition.addEventListener('end', () => {
-            // Restart listening
             recognition.start();
         });
         
@@ -475,6 +463,57 @@
             response.textContent = 'Error: ' + event.error;
             voiceStatus.textContent = 'Error - restarting...';
         });
+        
+        // Timeout Management
+        function startTimeout() {
+            clearTimeout(timeoutId);
+            updateTimer();
+            timeoutId = setTimeout(() => {
+                exitConversation();
+            }, TIMEOUT_DURATION);
+        }
+        
+        function resetTimeout() {
+            clearTimeout(timeoutId);
+            updateTimer();
+            timeoutId = setTimeout(() => {
+                exitConversation();
+            }, TIMEOUT_DURATION);
+        }
+        
+        function updateTimer() {
+            timerEl.textContent = 'Auto-exit in: 2:00';
+            let remaining = TIMEOUT_DURATION / 1000;
+            const timerInterval = setInterval(() => {
+                remaining--;
+                const mins = Math.floor(remaining / 60);
+                const secs = Math.floor(remaining % 60);
+                timerEl.textContent = 'Auto-exit in: ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+                
+                if (remaining <= 30) {
+                    timerEl.classList.add('warning');
+                }
+                
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        }
+        
+        function exitConversation() {
+            inConversation = false;
+            indicator.classList.remove('active');
+            statusEl.classList.remove('active');
+            statusEl.classList.add('waiting');
+            statusText.textContent = 'Listening for "Jarvis"';
+            voiceStatus.classList.remove('in-conversation');
+            voiceStatus.textContent = 'Listening for "Jarvis"...';
+            transcript.textContent = 'Conversation ended. Say "Jarvis" to start again.';
+            response.textContent = 'I\'m ready when you are! Say "Jarvis" to begin.';
+            timerEl.textContent = '';
+            timerEl.classList.remove('warning');
+            clearTimeout(timeoutId);
+        }
         
         // Command Processing
         function processCommand(command) {
@@ -504,6 +543,7 @@
             
             response.textContent = reply;
             speak(reply);
+            voiceStatus.textContent = 'Ready for next command...';
         }
         
         // Text to Speech
