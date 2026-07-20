@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jarvis - AI Voice Dashboard</title>
+    <title>Jarvis - Always Listening AI</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -35,21 +35,34 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: #064e3b;
             padding: 8px 16px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
-            color: #86efac;
         }
         .status-dot {
             width: 8px;
             height: 8px;
-            background: #10b981;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
+        .status.listening {
+            background: #064e3b;
+            color: #86efac;
+        }
+        .status.listening .status-dot {
+            background: #10b981;
+        }
+        .status.processing {
+            background: #1e3a1f;
+            color: #86efac;
+        }
+        .status.processing .status-dot {
+            background: #10b981;
+            animation: pulse-fast 0.6s infinite;
+        }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.2); } }
         
         /* Voice Control Section */
         .voice-section {
@@ -64,48 +77,71 @@
             font-size: 24px;
             font-weight: 700;
             color: white;
+            margin-bottom: 8px;
+        }
+        .voice-subtitle {
+            font-size: 14px;
+            color: #94a3b8;
             margin-bottom: 24px;
         }
-        .voice-button {
+        .listening-indicator {
             width: 120px;
             height: 120px;
             border-radius: 50%;
             border: 3px solid #60a5fa;
             background: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
-            cursor: pointer;
-            font-size: 48px;
+            margin: 0 auto 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 24px;
-            transition: all 0.3s;
+            font-size: 48px;
             box-shadow: 0 0 30px rgba(96, 165, 250, 0.3);
+            position: relative;
         }
-        .voice-button:hover {
-            background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%);
-            box-shadow: 0 0 50px rgba(96, 165, 250, 0.5);
-            transform: scale(1.05);
-        }
-        .voice-button.listening {
-            animation: listening 0.6s infinite;
+        .listening-indicator.active {
+            animation: listening-pulse 0.6s infinite;
             background: linear-gradient(135deg, #dc2626 0%, #1e293b 100%);
             border-color: #dc2626;
             box-shadow: 0 0 50px rgba(220, 38, 38, 0.5);
         }
-        @keyframes listening {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        @keyframes listening-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(220, 38, 38, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 0 50px rgba(220, 38, 38, 0.6); }
         }
+        .sound-waves {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+        .wave {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid #dc2626;
+            opacity: 0;
+        }
+        .listening-indicator.active .wave {
+            animation: sound-wave 1.5s infinite;
+        }
+        .wave:nth-child(1) { animation-delay: 0s; }
+        .wave:nth-child(2) { animation-delay: 0.3s; }
+        .wave:nth-child(3) { animation-delay: 0.6s; }
+        @keyframes sound-wave {
+            0% { width: 100%; height: 100%; opacity: 0.8; }
+            100% { width: 200%; height: 200%; opacity: 0; top: -50%; left: -50%; }
+        }
+        
         .voice-status {
-            font-size: 14px;
+            font-size: 16px;
             color: #94a3b8;
-            margin-bottom: 16px;
-            min-height: 20px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            min-height: 24px;
         }
         .voice-status.active {
             color: #60a5fa;
-            font-weight: 600;
         }
+        
         .voice-transcript {
             background: #0f172a;
             border: 1px solid #334155;
@@ -127,13 +163,14 @@
             color: #60a5fa;
             font-style: italic;
         }
+        
         .voice-response {
             background: #064e3b;
             border: 1px solid #10b981;
             border-radius: 8px;
             padding: 16px;
             margin: 16px 0;
-            min-height: 60px;
+            min-height: 80px;
         }
         .response-label {
             font-size: 11px;
@@ -145,6 +182,7 @@
         .response-text {
             font-size: 14px;
             color: #86efac;
+            line-height: 1.5;
         }
         
         .kpi-grid {
@@ -263,17 +301,27 @@
     <div class="container">
         <div class="header">
             <div class="logo">🚀 Jarvis</div>
-            <div class="status">
+            <div class="status listening" id="status">
                 <div class="status-dot"></div>
-                <span>AI Voice Enabled • Ready</span>
+                <span id="statusText">Always Listening</span>
             </div>
         </div>
         
         <!-- Voice Control Section -->
         <div class="voice-section">
             <div class="voice-title">🎙️ Talk to Jarvis</div>
-            <button class="voice-button" id="voiceBtn" title="Click to start speaking">🎤</button>
-            <div class="voice-status" id="voiceStatus">Click the microphone to speak</div>
+            <div class="voice-subtitle">Say "Jarvis" then your command</div>
+            
+            <div class="listening-indicator" id="indicator">
+                🎤
+                <div class="sound-waves">
+                    <div class="wave" style="width: 80%; height: 80%; top: 10%; left: 10%;"></div>
+                    <div class="wave" style="width: 120%; height: 120%; top: -10%; left: -10%;"></div>
+                    <div class="wave" style="width: 160%; height: 160%; top: -30%; left: -30%;"></div>
+                </div>
+            </div>
+            
+            <div class="voice-status" id="voiceStatus">Listening for "Jarvis"...</div>
             
             <div class="voice-transcript">
                 <div class="transcript-label">You said:</div>
@@ -282,7 +330,7 @@
             
             <div class="voice-response">
                 <div class="response-label">Jarvis responds:</div>
-                <div class="response-text" id="response">Ready to help. Ask me anything!</div>
+                <div class="response-text" id="response">I'm ready! Say "Jarvis" followed by your question.</div>
             </div>
         </div>
         
@@ -360,92 +408,98 @@
     </div>
     
     <script>
-        const voiceBtn = document.getElementById('voiceBtn');
+        const indicator = document.getElementById('indicator');
         const voiceStatus = document.getElementById('voiceStatus');
+        const statusText = document.getElementById('statusText');
         const transcript = document.getElementById('transcript');
         const response = document.getElementById('response');
         
         // Web Speech API setup
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
         
         // Speech Synthesis
         const synth = window.speechSynthesis;
         
-        let isListening = false;
+        let isListeningForWakeWord = true;
+        let awaitingCommand = false;
         
-        voiceBtn.addEventListener('click', () => {
-            if (!isListening) {
-                recognition.start();
-                isListening = true;
-                voiceBtn.classList.add('listening');
-                voiceStatus.textContent = 'Listening...';
-                voiceStatus.classList.add('active');
-                transcript.textContent = 'Processing your voice...';
-            } else {
-                recognition.stop();
-            }
-        });
+        // Start listening immediately
+        recognition.start();
         
         recognition.addEventListener('result', (event) => {
             let interimTranscript = '';
+            
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcriptSegment = event.results[i][0].transcript;
+                const transcriptSegment = event.results[i][0].transcript.toLowerCase();
+                
                 if (event.results[i].isFinal) {
-                    transcript.textContent = transcriptSegment;
-                    processCommand(transcriptSegment);
+                    // WAKE WORD DETECTION
+                    if (isListeningForWakeWord && transcriptSegment.includes('jarvis')) {
+                        transcript.textContent = 'Wake word detected! Listening for command...';
+                        voiceStatus.textContent = 'Processing your command...';
+                        indicator.classList.add('active');
+                        isListeningForWakeWord = false;
+                        awaitingCommand = true;
+                        response.textContent = 'I heard you! What would you like?';
+                        
+                    } else if (awaitingCommand) {
+                        // COMMAND PROCESSING
+                        transcript.textContent = transcriptSegment;
+                        indicator.classList.remove('active');
+                        voiceStatus.textContent = 'Processing...';
+                        processCommand(transcriptSegment);
+                        awaitingCommand = false;
+                        isListeningForWakeWord = true;
+                        voiceStatus.textContent = 'Listening for "Jarvis"...';
+                    }
                 } else {
-                    interimTranscript += transcriptSegment;
+                    interimTranscript += transcriptSegment + ' ';
                 }
             }
-            if (interimTranscript) {
+            
+            if (interimTranscript && !awaitingCommand) {
                 transcript.textContent = interimTranscript;
             }
         });
         
         recognition.addEventListener('end', () => {
-            isListening = false;
-            voiceBtn.classList.remove('listening');
-            voiceStatus.textContent = 'Ready to listen again';
-            voiceStatus.classList.remove('active');
+            // Restart listening
+            recognition.start();
         });
         
         recognition.addEventListener('error', (event) => {
             response.textContent = 'Error: ' + event.error;
-            voiceStatus.textContent = 'Error occurred';
+            voiceStatus.textContent = 'Error - restarting...';
         });
         
         // Command Processing
         function processCommand(command) {
-            const cmd = command.toLowerCase();
             let reply = '';
             
-            if (cmd.includes('ccna') || cmd.includes('progress')) {
+            if (command.includes('ccna') || command.includes('progress')) {
                 reply = "You're at 72 percent on CCNA. Your next topic is Security and VPNs. You need 2 more weeks to master this topic.";
             }
-            else if (cmd.includes('study') || cmd.includes('hours')) {
+            else if (command.includes('study') || command.includes('hours')) {
                 reply = "This week you've studied 4 hours. Your target is 5 hours. You need one more hour this weekend. Schedule a 2 hour block on Sunday morning.";
             }
-            else if (cmd.includes('loytex') || cmd.includes('commission')) {
+            else if (command.includes('loytex') || command.includes('commission')) {
                 reply = "Your Loytex commission this month is 1,500 Kenyan Shillings. You've made 52 sales. Your average earnings per order is 28 Kenyan Shillings.";
             }
-            else if (cmd.includes('farmlink') || cmd.includes('signup')) {
+            else if (command.includes('farmlink') || command.includes('signup')) {
                 reply = "FarmLink has 18 new signups. Your target is 30 by end of month. You're at 60 percent. You need 12 more customers. No new signups in the last 2 days. I recommend a WhatsApp marketing campaign in Kiambu.";
             }
-            else if (cmd.includes('alert') || cmd.includes('problem')) {
+            else if (command.includes('alert') || command.includes('problem')) {
                 reply = "You have 3 active alerts. FarmLink signups have stalled. Your study hours are below target. And Loytex maintenance is 8 days overdue. I recommend focusing on the farm link growth issue first.";
             }
-            else if (cmd.includes('revenue') || cmd.includes('money')) {
+            else if (command.includes('revenue') || command.includes('money')) {
                 reply = "Your weekly revenue is 8,500 Kenyan Shillings. This month you've earned 34,000. At your current rate, you'll earn around 408,000 by end of year. Farm Link is your strongest revenue stream at 4,200 per week.";
             }
-            else if (cmd.includes('hello') || cmd.includes('hi')) {
-                reply = "Hello! I'm Jarvis, your AI operations assistant. I can tell you about your CCNA progress, business metrics, alerts, or recommendations. What would you like to know?";
-            }
             else {
-                reply = "I understood: '" + command + "'. I can help you with CCNA progress, study hours, business metrics, or alerts. What would you like to know?";
+                reply = "I understood: " + command + ". Ask me about your CCNA progress, study hours, business metrics, Loytex commission, FarmLink signups, or any alerts.";
             }
             
             response.textContent = reply;
