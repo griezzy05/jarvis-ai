@@ -2,89 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f172a">
     <title>Jarvis - AI Voice Assistant</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192'/><text x='96' y='140' font-size='100' text-anchor='middle' fill='%2360a5fa' font-weight='bold'>J</text></svg>">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1a2847 100%);
             color: #e2e8f0;
-            padding: 20px;
+            padding: 16px;
             min-height: 100vh;
-            overflow-x: hidden;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 800px; margin: 0 auto; }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
             border-bottom: 2px solid #334155;
         }
-        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .logo { font-size: 24px; font-weight: 800; color: #60a5fa; }
         .status {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             padding: 6px 12px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
+            background: #064e3b;
+            color: #86efac;
         }
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
+            background: #10b981;
             animation: pulse 2s infinite;
         }
-        .status.waiting {
-            background: #064e3b;
-            color: #86efac;
-        }
-        .status.waiting .status-dot {
-            background: #10b981;
-        }
-        .status.active {
-            background: #7f1d1d;
-            color: #fecaca;
-        }
-        .status.active .status-dot {
-            background: #dc2626;
-            animation: pulse-fast 0.4s infinite;
-        }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes pulse-fast { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.3); } }
         
         .voice-section {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 2px solid #334155;
             border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
+            padding: 20px;
+            margin-bottom: 20px;
             text-align: center;
         }
-        .voice-title { font-size: 20px; font-weight: 700; color: white; margin-bottom: 6px; }
-        .voice-subtitle { font-size: 12px; color: #94a3b8; margin-bottom: 16px; }
+        .voice-title { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; }
+        .voice-subtitle { font-size: 11px; color: #94a3b8; margin-bottom: 12px; }
         
         .listening-indicator {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: 3px solid #60a5fa;
             background: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
-            margin: 0 auto 16px;
+            margin: 0 auto 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
             box-shadow: 0 0 30px rgba(96, 165, 250, 0.3);
         }
         .listening-indicator.active {
@@ -95,89 +78,56 @@
         }
         @keyframes listening-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         
-        .voice-status { font-size: 14px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; min-height: 20px; }
-        .voice-status.active { color: #60a5fa; }
+        .voice-status { font-size: 13px; color: #94a3b8; margin-bottom: 10px; font-weight: 600; }
         
         .voice-transcript {
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 8px;
-            padding: 12px;
-            margin: 12px 0;
-            min-height: 50px;
-            font-size: 13px;
+            padding: 10px;
+            margin: 10px 0;
+            min-height: 40px;
+            font-size: 12px;
             color: #60a5fa;
-            word-wrap: break-word;
         }
         
         .voice-response {
             background: #064e3b;
             border: 1px solid #10b981;
             border-radius: 8px;
-            padding: 12px;
-            margin: 12px 0;
-            min-height: 60px;
-            font-size: 13px;
+            padding: 10px;
+            margin: 10px 0;
+            min-height: 50px;
+            font-size: 12px;
             color: #86efac;
             line-height: 1.4;
         }
         
-        .timer { font-size: 11px; color: #f59e0b; margin-top: 8px; }
-        .timer.warning { color: #dc2626; font-weight: 600; }
-        
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
         .kpi-card {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 1px solid #334155;
             border-radius: 8px;
-            padding: 12px;
+            padding: 10px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
         }
-        .kpi-value { font-size: 24px; font-weight: 800; color: #60a5fa; margin: 6px 0; }
-        .progress-bar { height: 4px; background: #334155; border-radius: 2px; overflow: hidden; margin: 6px 0; }
+        .kpi-value { font-size: 20px; font-weight: 800; color: #60a5fa; margin: 4px 0; }
+        .progress-bar { height: 3px; background: #334155; border-radius: 2px; overflow: hidden; margin: 4px 0; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
-        
-        .section-title { font-size: 16px; font-weight: 700; color: white; margin: 24px 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #334155; }
-        
-        .alerts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-        .alert-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-left: 4px solid #dc2626;
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 12px;
-        }
-        .alert-title { font-weight: 700; color: white; margin-bottom: 4px; }
-        
-        @media (max-width: 768px) {
-            body { padding: 12px; }
-            .header { margin-bottom: 16px; }
-            .logo { font-size: 20px; }
-            .listening-indicator { width: 80px; height: 80px; font-size: 32px; }
-            .voice-section { padding: 16px; margin-bottom: 16px; }
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-            .alerts-grid { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">🚀 Jarvis</div>
-            <div class="status waiting" id="status">
+            <div class="status" id="status">
                 <div class="status-dot"></div>
-                <span id="statusText">Ready</span>
+                <span>Ready</span>
             </div>
         </div>
         
@@ -188,13 +138,11 @@
             <div class="listening-indicator" id="indicator">🎤</div>
             <div class="voice-status" id="voiceStatus">Listening for "Jarvis"...</div>
             
-            <div class="voice-transcript" id="transcript">Ready to listen...</div>
+            <div class="voice-transcript" id="transcript">Ready...</div>
             <div class="voice-response" id="response">Say "Jarvis" to start</div>
-            <div class="timer" id="timer"></div>
         </div>
         
-        <div class="section-title">📊 Metrics</div>
-        <div class="kpi-grid" id="kpiGrid">
+        <div class="kpi-grid">
             <div class="kpi-card">
                 <div>CCNA</div>
                 <div class="kpi-value">72%</div>
@@ -216,35 +164,15 @@
                 <div class="progress-bar"><div class="progress-fill" style="width: 60%;"></div></div>
             </div>
         </div>
-        
-        <div class="section-title">🚨 Alerts</div>
-        <div class="alerts-grid" id="alertsGrid">
-            <div class="alert-card">
-                <div class="alert-title">FarmLink</div>
-                <div>Growth Stalled</div>
-            </div>
-            <div class="alert-card">
-                <div class="alert-title">Study</div>
-                <div>Below Target</div>
-            </div>
-            <div class="alert-card">
-                <div class="alert-title">Loytex</div>
-                <div>Maintenance</div>
-            </div>
-        </div>
     </div>
 
     <script>
         const BACKEND_URL = 'https://jarvis-backend-syzv.onrender.com';
-        const TIMEOUT_DURATION = 120000;
         
         const indicator = document.getElementById('indicator');
         const voiceStatus = document.getElementById('voiceStatus');
-        const statusEl = document.getElementById('status');
-        const statusText = document.getElementById('statusText');
         const transcript = document.getElementById('transcript');
         const response = document.getElementById('response');
-        const timerEl = document.getElementById('timer');
         
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -255,14 +183,11 @@
         const synth = window.speechSynthesis;
         
         let inConversation = false;
-        let timeoutId = null;
-        let timerIntervalId = null;
         let lastFinalResultIndex = -1;
-        let wakeWordDetected = false;
         
         recognition.start();
         
-        
+        recognition.addEventListener('result', (event) => {
             let interimTranscript = '';
             
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -273,110 +198,35 @@
                         lastFinalResultIndex = i;
                         
                         if (!inConversation && transcriptSegment.includes('jarvis')) {
-    enterConversation();
-    wakeWordDetected = true;
-} else if (inConversation && wakeWordDetected) {
-    // Now we process the command after wake word
-    transcript.textContent = transcriptSegment;
-    recognition.addEventListener('result', (event) => {
-    let interimTranscript = '';
-    
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcriptSegment = event.results[i][0].transcript.toLowerCase();
-        
-        if (event.results[i].isFinal) {
-            if (i > lastFinalResultIndex) {
-                lastFinalResultIndex = i;
-                
-                if (!inConversation && transcriptSegment.includes('jarvis')) {
-                    log('Wake word detected!');
-                    enterConversation();
-                } else if (inConversation) {
-                    transcript.textContent = transcriptSegment;
-                    voiceStatus.textContent = 'Processing...';
-                    processCommand(transcriptSegment);
-                    resetTimeout();
+                            inConversation = true;
+                            indicator.classList.add('active');
+                            voiceStatus.textContent = 'Ready for command...';
+                            transcript.textContent = '"Jarvis" detected!';
+                            response.textContent = 'Listening for your command...';
+                        } else if (inConversation) {
+                            transcript.textContent = transcriptSegment;
+                            voiceStatus.textContent = 'Processing...';
+                            processCommand(transcriptSegment);
+                            inConversation = false;
+                            indicator.classList.remove('active');
+                            voiceStatus.textContent = 'Listening for "Jarvis"...';
+                        }
+                    }
+                } else {
+                    if (!inConversation) {
+                        interimTranscript += transcriptSegment + ' ';
+                    }
                 }
             }
-        } else {
-            if (!inConversation) {
-                interimTranscript += transcriptSegment + ' ';
+            
+            if (interimTranscript && !inConversation) {
+                transcript.textContent = interimTranscript;
             }
-        }
-    }
-    
-    if (interimTranscript && !inConversation) {
-        transcript.textContent = interimTranscript;
-    }
-});
-} else if (inConversation) {
-    transcript.textContent = transcriptSegment;
-    voiceStatus.textContent = 'Processing...';
-    processCommand(transcriptSegment);
-    resetTimeout();
-}
-}
-}           
+        });
         
-        function enterConversation() {
-            inConversation = true;
-            wakeWordDetected = false;
-            indicator.classList.add('active');
-            statusEl.classList.remove('waiting');
-            statusEl.classList.add('active');
-            statusText.textContent = 'Listening';
-            voiceStatus.textContent = 'Ready for command...';
-            transcript.textContent = '"Jarvis" detected!';
-            response.textContent = 'Give me your command...';
-            startTimeout();
-        }
-        
-        function startTimeout() {
-            clearTimeout(timeoutId);
-            clearInterval(timerIntervalId);
-            
-            let remaining = TIMEOUT_DURATION / 1000;
-            updateTimer(remaining);
-            
-            timerIntervalId = setInterval(() => {
-                remaining--;
-                updateTimer(remaining);
-                if (remaining <= 0) {
-                    clearInterval(timerIntervalId);
-                }
-            }, 1000);
-            
-            timeoutId = setTimeout(() => {
-                exitConversation();
-            }, TIMEOUT_DURATION);
-        }
-        
-        function resetTimeout() {
-            startTimeout();
-        }
-        
-        function updateTimer(seconds) {
-            const mins = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            timerEl.textContent = `Exit: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-            timerEl.classList.toggle('warning', seconds <= 30);
-        }
-        
-        function exitConversation() {
-            inConversation = false;
-            clearTimeout(timeoutId);
-            clearInterval(timerIntervalId);
-            lastFinalResultIndex = -1;
-            
-            indicator.classList.remove('active');
-            statusEl.classList.remove('active');
-            statusEl.classList.add('waiting');
-            statusText.textContent = 'Ready';
-            voiceStatus.textContent = 'Listening for "Jarvis"...';
-            transcript.textContent = 'Ready to listen...';
-            response.textContent = 'Say "Jarvis" to start';
-            timerEl.textContent = '';
-        }
+        recognition.addEventListener('end', () => {
+            recognition.start();
+        });
         
         async function processCommand(command) {
             try {
@@ -387,25 +237,13 @@
                 });
                 
                 const data = await res.json();
-                const reply = data.response || 'I did not understand that.';
+                const reply = data.response || 'No response';
                 response.textContent = reply;
                 speak(reply);
             } catch (error) {
-                console.error('Backend error:', error);
-                const fallbackReply = getFallbackResponse(command);
-                response.textContent = fallbackReply;
-                speak(fallbackReply);
+                console.error('Error:', error);
+                response.textContent = '❌ Error: ' + error.message;
             }
-            voiceStatus.textContent = 'Ready for next...';
-        }
-        
-        function getFallbackResponse(command) {
-            if (command.includes('ccna')) return 'You are at 72 percent on CCNA.';
-            if (command.includes('study')) return 'This week you studied 4 hours. Target is 5.';
-            if (command.includes('loytex')) return 'Loytex commission is 1500 Kenyan Shillings.';
-            if (command.includes('farmlink')) return 'FarmLink has 18 signups. Target is 30.';
-            if (command.includes('alert')) return 'You have 3 active alerts.';
-            return 'Ask me about CCNA, study, Loytex, FarmLink, or alerts.';
         }
         
         function speak(text) {
@@ -413,10 +251,6 @@
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 1;
             synth.speak(utterance);
-        }
-        
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
         }
     </script>
 </body>
