@@ -273,13 +273,16 @@
                         lastFinalResultIndex = i;
                         
                         if (!inConversation && transcriptSegment.includes('jarvis')) {
-                            enterConversation();
-                            wakeWordDetected = true;
-                        } else if (inConversation && !wakeWordDetected) {
-                            transcript.textContent = transcriptSegment;
-                            voiceStatus.textContent = 'Processing...';
-                            processCommand(transcriptSegment);
-                            resetTimeout();
+    enterConversation();
+    wakeWordDetected = true;
+} else if (inConversation && wakeWordDetected) {
+    // Now we process the command after wake word
+    transcript.textContent = transcriptSegment;
+    voiceStatus.textContent = 'Processing...';
+    processCommand(transcriptSegment);
+    resetTimeout();
+    wakeWordDetected = false; // Reset for next cycle
+}
                         }
                     }
                 } else {
