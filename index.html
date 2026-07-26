@@ -262,7 +262,7 @@
         
         recognition.start();
         
-        recognition.addEventListener('result', (event) => {
+        
             let interimTranscript = '';
             
             for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -278,28 +278,45 @@
 } else if (inConversation && wakeWordDetected) {
     // Now we process the command after wake word
     transcript.textContent = transcriptSegment;
+    recognition.addEventListener('result', (event) => {
+    let interimTranscript = '';
+    
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcriptSegment = event.results[i][0].transcript.toLowerCase();
+        
+        if (event.results[i].isFinal) {
+            if (i > lastFinalResultIndex) {
+                lastFinalResultIndex = i;
+                
+                if (!inConversation && transcriptSegment.includes('jarvis')) {
+                    log('Wake word detected!');
+                    enterConversation();
+                } else if (inConversation) {
+                    transcript.textContent = transcriptSegment;
+                    voiceStatus.textContent = 'Processing...';
+                    processCommand(transcriptSegment);
+                    resetTimeout();
+                }
+            }
+        } else {
+            if (!inConversation) {
+                interimTranscript += transcriptSegment + ' ';
+            }
+        }
+    }
+    
+    if (interimTranscript && !inConversation) {
+        transcript.textContent = interimTranscript;
+    }
+});
+} else if (inConversation) {
+    transcript.textContent = transcriptSegment;
     voiceStatus.textContent = 'Processing...';
     processCommand(transcriptSegment);
     resetTimeout();
-    wakeWordDetected = false; // Reset for next cycle
 }
-                        }
-                    }
-                } else {
-                    if (!inConversation) {
-                        interimTranscript += transcriptSegment + ' ';
-                    }
-                }
-            }
-            
-            if (interimTranscript && !inConversation) {
-                transcript.textContent = interimTranscript;
-            }
-        });
-        
-        recognition.addEventListener('end', () => {
-            recognition.start();
-        });
+}
+}           
         
         function enterConversation() {
             inConversation = true;
