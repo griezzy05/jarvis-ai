@@ -6,7 +6,6 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f172a">
     <title>Jarvis - AI Voice Assistant</title>
-    <link rel="manifest" href="manifest.json">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -26,25 +25,6 @@
             border-bottom: 2px solid #334155;
         }
         .logo { font-size: 24px; font-weight: 800; color: #60a5fa; }
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-            background: #064e3b;
-            color: #86efac;
-        }
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
         .voice-section {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
@@ -103,66 +83,41 @@
             line-height: 1.4;
         }
         
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+        button {
+            background: #60a5fa;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            margin: 10px 0;
         }
-        .kpi-card {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 10px;
-            text-align: center;
-            font-size: 11px;
-        }
-        .kpi-value { font-size: 20px; font-weight: 800; color: #60a5fa; margin: 4px 0; }
-        .progress-bar { height: 3px; background: #334155; border-radius: 2px; overflow: hidden; margin: 4px 0; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        button:active { background: #3b82f6; }
+        
+        .debug { background: #0f172a; border: 1px solid #334155; padding: 10px; margin-top: 10px; font-size: 10px; color: #94a3b8; max-height: 80px; overflow-y: auto; border-radius: 6px; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">🚀 Jarvis</div>
-            <div class="status" id="status">
-                <div class="status-dot"></div>
-                <span>Ready</span>
-            </div>
         </div>
         
         <div class="voice-section">
             <div class="voice-title">🎙️ Voice Assistant</div>
-            <div class="voice-subtitle">Say "Jarvis" + your command</div>
+            <div class="voice-subtitle">Click button to start or say "Jarvis"</div>
             
             <div class="listening-indicator" id="indicator">🎤</div>
-            <div class="voice-status" id="voiceStatus">Listening for "Jarvis"...</div>
+            <div class="voice-status" id="voiceStatus">Ready...</div>
             
-            <div class="voice-transcript" id="transcript">Ready...</div>
-            <div class="voice-response" id="response">Say "Jarvis" to start</div>
-        </div>
-        
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div>CCNA</div>
-                <div class="kpi-value">72%</div>
-                <div class="progress-bar"><div class="progress-fill" style="width: 72%;"></div></div>
-            </div>
-            <div class="kpi-card">
-                <div>Study Hrs</div>
-                <div class="kpi-value">4/5</div>
-                <div class="progress-bar"><div class="progress-fill" style="width: 80%;"></div></div>
-            </div>
-            <div class="kpi-card">
-                <div>Loytex</div>
-                <div class="kpi-value">1.5K</div>
-                <div class="progress-bar"><div class="progress-fill" style="width: 75%;"></div></div>
-            </div>
-            <div class="kpi-card">
-                <div>FarmLink</div>
-                <div class="kpi-value">18/30</div>
-                <div class="progress-bar"><div class="progress-fill" style="width: 60%;"></div></div>
-            </div>
+            <button onclick="startListening()">🎤 Start Listening</button>
+            
+            <div class="voice-transcript" id="transcript">Waiting for input...</div>
+            <div class="voice-response" id="response">Click "Start Listening" to begin</div>
+            
+            <div class="debug" id="debug">Debug log...</div>
         </div>
     </div>
 
@@ -173,63 +128,94 @@
         const voiceStatus = document.getElementById('voiceStatus');
         const transcript = document.getElementById('transcript');
         const response = document.getElementById('response');
+        const debug = document.getElementById('debug');
         
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        recognition.continuous = true;
+        recognition.continuous = false;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
         
         const synth = window.speechSynthesis;
         
+        let isListening = false;
         let inConversation = false;
-        let lastFinalResultIndex = -1;
         
-        recognition.start();
+        function log(msg) {
+            debug.textContent = new Date().toLocaleTimeString() + ' > ' + msg + '\n' + debug.textContent;
+        }
+        
+        function startListening() {
+            if (isListening) return;
+            
+            isListening = true;
+            log('🎙️ Starting speech recognition...');
+            indicator.classList.add('active');
+            voiceStatus.textContent = 'Listening...';
+            transcript.textContent = 'Speak now...';
+            recognition.start();
+        }
+        
+        recognition.addEventListener('start', () => {
+            log('Recognition started');
+        });
         
         recognition.addEventListener('result', (event) => {
             let interimTranscript = '';
+            let finalTranscript = '';
             
             for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcriptSegment = event.results[i][0].transcript.toLowerCase();
+                const transcriptSegment = event.results[i][0].transcript;
                 
                 if (event.results[i].isFinal) {
-                    if (i > lastFinalResultIndex) {
-                        lastFinalResultIndex = i;
-                        
-                        if (!inConversation && transcriptSegment.includes('jarvis')) {
-                            inConversation = true;
-                            indicator.classList.add('active');
-                            voiceStatus.textContent = 'Ready for command...';
-                            transcript.textContent = '"Jarvis" detected!';
-                            response.textContent = 'Listening for your command...';
-                        } else if (inConversation) {
-                            transcript.textContent = transcriptSegment;
-                            voiceStatus.textContent = 'Processing...';
-                            processCommand(transcriptSegment);
-                            inConversation = false;
-                            indicator.classList.remove('active');
-                            voiceStatus.textContent = 'Listening for "Jarvis"...';
-                        }
-                    }
+                    finalTranscript += transcriptSegment + ' ';
                 } else {
-                    if (!inConversation) {
-                        interimTranscript += transcriptSegment + ' ';
-                    }
+                    interimTranscript += transcriptSegment;
                 }
             }
             
-            if (interimTranscript && !inConversation) {
-                transcript.textContent = interimTranscript;
+            if (interimTranscript) {
+                transcript.textContent = 'Hearing: ' + interimTranscript;
+                log('Interim: ' + interimTranscript);
+            }
+            
+            if (finalTranscript) {
+                transcript.textContent = 'You said: ' + finalTranscript;
+                log('Final: ' + finalTranscript);
+                
+                if (!inConversation && finalTranscript.toLowerCase().includes('jarvis')) {
+                    log('✅ Wake word detected!');
+                    voiceStatus.textContent = 'Ready for command...';
+                    response.textContent = 'Waiting for your command...';
+                    inConversation = true;
+                    startListening(); // Listen again for command
+                } else if (inConversation) {
+                    log('Processing command: ' + finalTranscript);
+                    processCommand(finalTranscript);
+                    inConversation = false;
+                    isListening = false;
+                    indicator.classList.remove('active');
+                }
             }
         });
         
         recognition.addEventListener('end', () => {
-            recognition.start();
+            isListening = false;
+            indicator.classList.remove('active');
+            log('Recognition ended');
+        });
+        
+        recognition.addEventListener('error', (event) => {
+            log('❌ Error: ' + event.error);
+            isListening = false;
+            indicator.classList.remove('active');
         });
         
         async function processCommand(command) {
+            voiceStatus.textContent = 'Processing...';
+            
             try {
+                log('Sending to backend: ' + command);
                 const res = await fetch(`${BACKEND_URL}/api/command`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -237,19 +223,33 @@
                 });
                 
                 const data = await res.json();
-                const reply = data.response || 'No response';
+                const reply = data.response || 'No response received';
+                
+                log('Backend responded: ' + reply.substring(0, 50) + '...');
                 response.textContent = reply;
-                speak(reply);
+                
+                speakClear(reply);
+                voiceStatus.textContent = 'Speaking...';
             } catch (error) {
-                console.error('Error:', error);
+                log('❌ Backend error: ' + error.message);
                 response.textContent = '❌ Error: ' + error.message;
+                voiceStatus.textContent = 'Error occurred';
             }
         }
         
-        function speak(text) {
+        function speakClear(text) {
             if (synth.speaking) synth.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 1;
+            utterance.rate = 0.9;      // Slower (clearer)
+            utterance.pitch = 1.0;      // Normal pitch
+            utterance.volume = 1.0;     // Full volume
+            
+            utterance.onend = () => {
+                log('Speech finished');
+                voiceStatus.textContent = 'Ready...';
+            };
+            
             synth.speak(utterance);
         }
     </script>
