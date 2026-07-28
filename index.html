@@ -121,137 +121,170 @@
         </div>
     </div>
 
-    <script>
-        const BACKEND_URL = 'https://jarvis-backend-syzv.onrender.com';
+   const BACKEND_URL = 'https://jarvis-backend-syzv.onrender.com';
+
+const indicator = document.getElementById('indicator');
+const voiceStatus = document.getElementById('voiceStatus');
+const transcript = document.getElementById('transcript');
+const response = document.getElementById('response');
+const debug = document.getElementById('debug');
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+recognition.continuous = false;
+recognition.interimResults = true;
+recognition.lang = 'en-US';
+
+const synth = window.speechSynthesis;
+
+let isListening = false;
+let inConversation = false;
+let conversationTimeout = null;
+const CONVERSATION_DURATION = 120000; // 2 minutes
+
+function log(msg) {
+    debug.textContent = new Date().toLocaleTimeString() + ' > ' + msg + '\n' + debug.textContent;
+}
+
+function startListening() {
+    if (isListening) return;
+    
+    isListening = true;
+    log('🎙️ Starting speech recognition...');
+    indicator.classList.add('active');
+    voiceStatus.textContent = 'Listening...';
+    transcript.textContent = 'Speak now...';
+    recognition.start();
+}
+
+function enterConversationMode() {
+    inConversation = true;
+    log('✅ Entering conversation mode (2 minutes)');
+    voiceStatus.textContent = '💬 In conversation - say your command';
+    response.textContent = 'Listening for your command...';
+    
+    // Clear previous timeout
+    if (conversationTimeout) clearTimeout(conversationTimeout);
+    
+    // Exit conversation after 2 minutes of no activity
+    conversationTimeout = setTimeout(() => {
+        exitConversationMode();
+    }, CONVERSATION_DURATION);
+    
+    // Keep listening
+    startListening();
+}
+
+function exitConversationMode() {
+    inConversation = false;
+    isListening = false;
+    log('Exit: Conversation mode ended');
+    indicator.classList.remove('active');
+    voiceStatus.textContent = 'Ready... Click to start or say "Jarvis"';
+    response.textContent = 'Say "Jarvis" to start a new conversation';
+    
+    if (conversationTimeout) clearTimeout(conversationTimeout);
+}
+
+recognition.addEventListener('start', () => {
+    log('Recognition started');
+});
+
+recognition.addEventListener('result', (event) => {
+    let interimTranscript = '';
+    let finalTranscript = '';
+    
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcriptSegment = event.results[i][0].transcript;
         
-        const indicator = document.getElementById('indicator');
-        const voiceStatus = document.getElementById('voiceStatus');
-        const transcript = document.getElementById('transcript');
-        const response = document.getElementById('response');
-        const debug = document.getElementById('debug');
-        
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-        
-        const synth = window.speechSynthesis;
-        
-        let isListening = false;
-        let inConversation = false;
-        
-        function log(msg) {
-            debug.textContent = new Date().toLocaleTimeString() + ' > ' + msg + '\n' + debug.textContent;
+        if (event.results[i].isFinal) {
+            finalTranscript += transcriptSegment + ' ';
+        } else {
+            interimTranscript += transcriptSegment;
         }
+    }
+    
+    if (interimTranscript) {
+        transcript.textContent = 'Hearing: ' + interimTranscript;
+        log('Interim: ' + interimTranscript);
+    }
+    
+    if (finalTranscript) {
+        transcript.textContent = 'You said: ' + finalTranscript.trim();
+        log('Final: ' + finalTranscript.trim());
         
-        function startListening() {
-            if (isListening) return;
-            
-            isListening = true;
-            log('🎙️ Starting speech recognition...');
-            indicator.classList.add('active');
-            voiceStatus.textContent = 'Listening...';
-            transcript.textContent = 'Speak now...';
-            recognition.start();
-        }
-        
-        recognition.addEventListener('start', () => {
-            log('Recognition started');
-        });
-        
-        recognition.addEventListener('result', (event) => {
-            let interimTranscript = '';
-            let finalTranscript = '';
-            
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const transcriptSegment = event.results[i][0].transcript;
-                
-                if (event.results[i].isFinal) {
-                    finalTranscript += transcriptSegment + ' ';
-                } else {
-                    interimTranscript += transcriptSegment;
-                }
-            }
-            
-            if (interimTranscript) {
-                transcript.textContent = 'Hearing: ' + interimTranscript;
-                log('Interim: ' + interimTranscript);
-            }
-            
-            if (finalTranscript) {
-                transcript.textContent = 'You said: ' + finalTranscript;
-                log('Final: ' + finalTranscript);
-                
-                if (!inConversation && finalTranscript.toLowerCase().includes('jarvis')) {
-                    log('✅ Wake word detected!');
-                    voiceStatus.textContent = 'Ready for command...';
-                    response.textContent = 'Waiting for your command...';
-                    inConversation = true;
-                    startListening(); // Listen again for command
-                } else if (inConversation) {
-                    log('Processing command: ' + finalTranscript);
-                    processCommand(finalTranscript);
-                    inConversation = false;
-                    isListening = false;
-                    indicator.classList.remove('active');
-                }
-            }
-        });
-        
-        recognition.addEventListener('end', () => {
+        if (!inConversation && finalTranscript.toLowerCase().includes('jarvis')) {
+            log('✅ Wake word "Jarvis" detected!');
+            enterConversationMode();
+        } else if (inConversation) {
+            log('Processing command in conversation mode...');
+            processCommand(finalTranscript.trim());
             isListening = false;
-            indicator.classList.remove('active');
-            log('Recognition ended');
+        }
+    }
+});
+
+recognition.addEventListener('end', () => {
+    if (inConversation) {
+        // Auto-restart listening if still in conversation
+        log('Recognition ended, restarting in conversation mode...');
+        setTimeout(() => startListening(), 500);
+    } else {
+        isListening = false;
+        indicator.classList.remove('active');
+        log('Recognition ended');
+    }
+});
+
+recognition.addEventListener('error', (event) => {
+    log('❌ Error: ' + event.error);
+    isListening = false;
+    indicator.classList.remove('active');
+});
+
+async function processCommand(command) {
+    voiceStatus.textContent = 'Processing...';
+    
+    try {
+        log('Sending to backend: ' + command);
+        const res = await fetch(`${BACKEND_URL}/api/command`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command })
         });
         
-        recognition.addEventListener('error', (event) => {
-            log('❌ Error: ' + event.error);
-            isListening = false;
-            indicator.classList.remove('active');
-        });
+        const data = await res.json();
+        const reply = data.response || 'No response received';
         
-        async function processCommand(command) {
-            voiceStatus.textContent = 'Processing...';
-            
-            try {
-                log('Sending to backend: ' + command);
-                const res = await fetch(`${BACKEND_URL}/api/command`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command })
-                });
-                
-                const data = await res.json();
-                const reply = data.response || 'No response received';
-                
-                log('Backend responded: ' + reply.substring(0, 50) + '...');
-                response.textContent = reply;
-                
-                speakClear(reply);
-                voiceStatus.textContent = 'Speaking...';
-            } catch (error) {
-                log('❌ Backend error: ' + error.message);
-                response.textContent = '❌ Error: ' + error.message;
-                voiceStatus.textContent = 'Error occurred';
-            }
-        }
+        log('Response: ' + reply.substring(0, 60) + '...');
+        response.textContent = reply;
         
-        function speakClear(text) {
-            if (synth.speaking) synth.cancel();
-            
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;      // Slower (clearer)
-            utterance.pitch = 1.0;      // Normal pitch
-            utterance.volume = 1.0;     // Full volume
-            
-            utterance.onend = () => {
-                log('Speech finished');
-                voiceStatus.textContent = 'Ready...';
-            };
-            
-            synth.speak(utterance);
+        speakClear(reply);
+        voiceStatus.textContent = '✅ Speaking... (say next command)';
+    } catch (error) {
+        log('❌ Backend error: ' + error.message);
+        response.textContent = '❌ Error: ' + error.message;
+        voiceStatus.textContent = 'Error - click to retry';
+    }
+}
+
+function speakClear(text) {
+    if (synth.speaking) synth.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    utterance.onend = () => {
+        log('Speech finished - ready for next command');
+        if (inConversation) {
+            voiceStatus.textContent = '💬 Ready for next command...';
+            startListening();
         }
-    </script>
+    };
+    
+    synth.speak(utterance);
+}
 </body>
 </html>
