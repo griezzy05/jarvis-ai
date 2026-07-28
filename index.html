@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+</style>
+    <script src="data.js"></script>
+</head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
@@ -226,27 +228,16 @@
             indicator.classList.remove('active');
         });
         
-        async function processCommand(command) {
-            voiceStatus.textContent = 'Processing...';
-            try {
-                log('Sending: ' + command);
-                const res = await fetch(`${BACKEND_URL}/api/command`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command })
-                });
-                
-                const data = await res.json();
-                const reply = data.response || 'No response';
-                log('Response: ' + reply.substring(0, 50) + '...');
-                response.textContent = reply;
-                
-                speakClear(reply);
-            } catch (error) {
-                log('❌ Error: ' + error.message);
-                response.textContent = '❌ Error: ' + error.message;
-            }
-        }
+       function processCommand(command) {
+    voiceStatus.textContent = 'Processing...';
+    
+    // Get instant response from local data
+    const reply = getSmartResponse(command);
+    log('Response: ' + reply.substring(0, 50) + '...');
+    response.textContent = reply;
+    
+    speakClear(reply);
+}
         
         function speakClear(text) {
             if (synth.speaking) synth.cancel();
