@@ -433,30 +433,58 @@
         }
         
         // ============================================
-        // TEXT-TO-SPEECH - ACTIVE
-        // ============================================
-        function speakInBackground(text) {
-            if (synth.speaking) synth.cancel();
+        // TEXT-TO-SPEECH using 11Labs (High Quality)
+async function speakInBackground(text) {
+    try {
+        log('🎙️ Getting voice from 11Labs...');
+        
+        const res = await fetch(`${BACKEND_URL}/api/speak`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        
+        const data = await res.json();
+        
+        if (data.audio) {
+            // Play the audio
+            const audio = new Audio(data.audio);
+            audio.play();
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.95;
-            utterance.pitch = 1.0;
-            utterance.volume = 1.0;
-            
-            utterance.onstart = () => {
-                log('🔊 Speaking...');
-            };
-            
-            utterance.onend = () => {
-                log('✅ Done');
+            audio.onended = () => {
+                log('✅ Voice finished');
                 if (inConversation) {
                     voiceStatus.textContent = '💬 Ready for next command';
                     startListening();
                 }
             };
-            
-            synth.speak(utterance);
+        } else {
+            log('❌ No audio received');
         }
+    } catch (error) {
+        log('❌ 11Labs error: ' + error.message);
+        // Fallback to browser speech
+        fallbackBrowserSpeech(text);
+    }
+}
+
+// FALLBACK to browser speech if 11Labs fails
+function fallbackBrowserSpeech(text) {
+    if (synth.speaking) synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    utterance.onend = () => {
+        if (inConversation) {
+            voiceStatus.textContent = '💬 Ready for next command';
+            startListening();
+        }
+    };
+    
+    synth.speak(utterance);
+}
         
         // ============================================
         // FUTURE FEATURES - INACTIVE (Placeholders)
