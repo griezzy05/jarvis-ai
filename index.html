@@ -377,15 +377,15 @@
                 log('Final: ' + finalTranscript.trim());
                 
                 if (!inConversation && finalTranscript.toLowerCase().includes('jarvis')) {
-                    log('✅ Wake word detected');
-                    enterConversationMode();
-                } else if (inConversation) {
-                    log('Processing...');
-                    processCommand(finalTranscript.trim());
-                    isListening = false;
-                }
-            }
-        });
+    log('✅ Wake word detected');
+    inConversation = true; // Set BEFORE entering
+    enterConversationMode();
+} else if (inConversation && !finalTranscript.toLowerCase().includes('jarvis')) {
+    log('Processing...');
+    processCommand(finalTranscript.trim());
+    isListening = false;
+}
+            }                           
         
         recognition.addEventListener('end', () => {
             if (inConversation) {
