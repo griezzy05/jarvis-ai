@@ -166,7 +166,13 @@
         recognition.lang = 'en-US';
         
         const synth = window.speechSynthesis;
-        
+        // Pre-warm voice synthesis on page load
+window.addEventListener('load', () => {
+    const dummy = new SpeechSynthesisUtterance('');
+    synth.speak(dummy);
+    synth.cancel();
+    log('✅ Voice ready');
+});
         let isListening = false;
         let inConversation = false;
         let conversationTimeout = null;
@@ -267,7 +273,28 @@
             
             speakClear(reply);
         }
-        
+        function speakInBackground(text) {
+    if (synth.speaking) synth.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    utterance.onstart = () => {
+        log('🔊 Speaking...');
+    };
+    
+    utterance.onend = () => {
+        log('✅ Done');
+        if (inConversation) {
+            voiceStatus.textContent = '💬 Ready for next';
+            startListening();
+        }
+    };
+    
+    synth.speak(utterance);
+}
         function speakClear(text) {
             if (synth.speaking) synth.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
