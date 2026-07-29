@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-</style>
-    <script src="data.js"></script>
-</head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="mobile-web-app-capable" content="yes">
@@ -124,7 +122,37 @@
     </div>
 
     <script>
-        const BACKEND_URL = 'https://jarvis-backend-syzv.onrender.com';
+        // USER DATA - ALL IN ONE PLACE
+        const jarvisData = {
+            ccna: { progress: 12, nextTopic: "Network Fundamentals", weeksLeft: 20 },
+            loytex: { commission: 3000, monthlyAverage: 6000 },
+            farmlink: { status: "Final stages", priority: "CRITICAL" },
+            schedule: { school: "2:30 PM" }
+        };
+        
+        // SMART RESPONSES
+        function getSmartResponse(command) {
+            const cmd = command.toLowerCase();
+            
+            if (cmd.includes('ccna')) {
+                return `Your CCNA is at ${jarvisData.ccna.progress}%. Next topic: ${jarvisData.ccna.nextTopic}. You need ${jarvisData.ccna.weeksLeft} weeks. Stay consistent!`;
+            }
+            if (cmd.includes('loytex')) {
+                return `You earn ${jarvisData.loytex.commission} Kenyan Shillings from Loytex every 2 weeks. Monthly average: ${jarvisData.loytex.monthlyAverage} Shillings. Great work!`;
+            }
+            if (cmd.includes('farmlink')) {
+                return `FarmLink is in ${jarvisData.farmlink.status}. Priority #1: Complete it fully this week. You're almost there!`;
+            }
+            if (cmd.includes('school') || cmd.includes('schedule')) {
+                return `Your school is at ${jarvisData.schedule.school}. Be there on time and manage your study schedule.`;
+            }
+            if (cmd.includes('progress') || cmd.includes('how')) {
+                return `You're doing great! CCNA at ${jarvisData.ccna.progress}%, earning ${jarvisData.loytex.commission} from Loytex, FarmLink almost done. Focus on completing FarmLink this week!`;
+            }
+            return `I can help with CCNA, Loytex, FarmLink, your schedule, or your progress. What would you like to know?`;
+        }
+        
+        // VOICE RECOGNITION
         const indicator = document.getElementById('indicator');
         const voiceStatus = document.getElementById('voiceStatus');
         const transcript = document.getElementById('transcript');
@@ -151,7 +179,7 @@
         function startListening() {
             if (isListening) return;
             isListening = true;
-            log('🎙️ Starting...');
+            log('🎙️ Listening...');
             indicator.classList.add('active');
             voiceStatus.textContent = 'Listening...';
             transcript.textContent = 'Speak now...';
@@ -162,7 +190,7 @@
             inConversation = true;
             log('✅ Conversation mode (2 min)');
             voiceStatus.textContent = '💬 Say your command';
-            response.textContent = 'Listening...';
+            response.textContent = 'Ready...';
             
             if (conversationTimeout) clearTimeout(conversationTimeout);
             conversationTimeout = setTimeout(() => {
@@ -171,13 +199,13 @@
             
             startListening();
         }
+        
         function exitConversationMode() {
             inConversation = false;
             isListening = false;
             log('Exit: Conversation ended');
             indicator.classList.remove('active');
             voiceStatus.textContent = 'Ready';
-            response.textContent = 'Say "Jarvis" to start';
             if (conversationTimeout) clearTimeout(conversationTimeout);
         }
         
@@ -206,6 +234,7 @@
                     log('✅ Wake word detected');
                     enterConversationMode();
                 } else if (inConversation) {
+                    log('Processing...');
                     processCommand(finalTranscript.trim());
                     isListening = false;
                 }
@@ -214,8 +243,8 @@
         
         recognition.addEventListener('end', () => {
             if (inConversation) {
-                log('Restarting in conversation mode...');
-                setTimeout(() => startListening(), 500);
+                log('Restarting...');
+                setTimeout(() => startListening(), 300);
             } else {
                 isListening = false;
                 indicator.classList.remove('active');
@@ -228,16 +257,16 @@
             indicator.classList.remove('active');
         });
         
-       function processCommand(command) {
-    voiceStatus.textContent = 'Processing...';
-    
-    // Get instant response from local data
-    const reply = getSmartResponse(command);
-    log('Response: ' + reply.substring(0, 50) + '...');
-    response.textContent = reply;
-    
-    speakClear(reply);
-}
+        function processCommand(command) {
+            voiceStatus.textContent = 'Processing...';
+            
+            // INSTANT local response
+            const reply = getSmartResponse(command);
+            log('Response: ' + reply.substring(0, 40) + '...');
+            response.textContent = reply;
+            
+            speakClear(reply);
+        }
         
         function speakClear(text) {
             if (synth.speaking) synth.cancel();
@@ -247,7 +276,7 @@
             utterance.volume = 1.0;
             
             utterance.onend = () => {
-                log('Speech finished');
+                log('Done - Ready for next');
                 if (inConversation) {
                     voiceStatus.textContent = '💬 Ready for next';
                     startListening();
