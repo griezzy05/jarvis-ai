@@ -6,6 +6,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0f172a">
     <title>Jarvis - AI Voice Assistant</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -15,7 +16,7 @@
             padding: 16px;
             min-height: 100vh;
         }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 900px; margin: 0 auto; }
         .header {
             display: flex;
             justify-content: space-between;
@@ -24,30 +25,50 @@
             padding-bottom: 12px;
             border-bottom: 2px solid #334155;
         }
-        .logo { font-size: 24px; font-weight: 800; color: #60a5fa; }
+        .logo { font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #60a5fa, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #064e3b;
+            color: #86efac;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         
         .voice-section {
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             border: 2px solid #334155;
             border-radius: 12px;
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 20px;
             text-align: center;
         }
-        .voice-title { font-size: 18px; font-weight: 700; color: white; margin-bottom: 4px; }
-        .voice-subtitle { font-size: 11px; color: #94a3b8; margin-bottom: 12px; }
+        .voice-title { font-size: 20px; font-weight: 700; color: white; margin-bottom: 4px; }
+        .voice-subtitle { font-size: 12px; color: #94a3b8; margin-bottom: 14px; }
         
         .listening-indicator {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            border: 3px solid #60a5fa;
+            border: 4px solid #60a5fa;
             background: linear-gradient(135deg, #1e40af 0%, #1e293b 100%);
-            margin: 0 auto 12px;
+            margin: 0 auto 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 48px;
             box-shadow: 0 0 30px rgba(96, 165, 250, 0.3);
         }
         .listening-indicator.active {
@@ -56,103 +77,220 @@
             border-color: #dc2626;
             box-shadow: 0 0 50px rgba(220, 38, 38, 0.5);
         }
-        @keyframes listening-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes listening-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
         
-        .voice-status { font-size: 13px; color: #94a3b8; margin-bottom: 10px; font-weight: 600; }
+        .voice-status { font-size: 14px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; }
         
         .voice-transcript {
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            min-height: 40px;
-            font-size: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            min-height: 45px;
+            font-size: 13px;
             color: #60a5fa;
+            line-height: 1.4;
         }
         
         .voice-response {
             background: #064e3b;
             border: 1px solid #10b981;
             border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            min-height: 50px;
-            font-size: 12px;
+            padding: 12px;
+            margin: 12px 0;
+            min-height: 60px;
+            font-size: 13px;
             color: #86efac;
-            line-height: 1.4;
+            line-height: 1.5;
         }
         
         button {
             background: #60a5fa;
             border: none;
             color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 12px 24px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             width: 100%;
             margin: 10px 0;
+            font-size: 14px;
+            transition: all 0.2s;
         }
-        button:active { background: #3b82f6; }
+        button:hover { background: #3b82f6; }
+        button:active { background: #1d4ed8; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
         
-        .debug { background: #0f172a; border: 1px solid #334155; padding: 10px; margin-top: 10px; font-size: 10px; color: #94a3b8; max-height: 80px; overflow-y: auto; border-radius: 6px; }
+        .debug { 
+            background: #0f172a; 
+            border: 1px solid #334155; 
+            padding: 10px; 
+            margin-top: 10px; 
+            font-size: 10px; 
+            color: #94a3b8; 
+            max-height: 100px; 
+            overflow-y: auto; 
+            border-radius: 6px; 
+            font-family: monospace;
+        }
+        
+        .section-title { 
+            font-size: 16px; 
+            font-weight: 700; 
+            color: white; 
+            margin-top: 24px; 
+            margin-bottom: 12px; 
+            padding-bottom: 8px; 
+            border-bottom: 2px solid #334155; 
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .kpi-value { font-size: 22px; font-weight: 800; color: #60a5fa; margin: 6px 0; }
+        .progress-bar { height: 4px; background: #334155; border-radius: 2px; overflow: hidden; margin: 6px 0; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        
+        .feature-inactive { opacity: 0.5; pointer-events: none; }
+        .feature-label { font-size: 9px; color: #f59e0b; margin-top: 4px; font-weight: 600; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <div class="logo">🚀 Jarvis</div>
+            <div class="status-badge" id="status">
+                <div class="status-dot"></div>
+                <span>Ready</span>
+            </div>
         </div>
         
+        <!-- VOICE SECTION - ACTIVE -->
         <div class="voice-section">
             <div class="voice-title">🎙️ Voice Assistant</div>
-            <div class="voice-subtitle">Click button or say "Jarvis"</div>
+            <div class="voice-subtitle">Click button or say "Jarvis" + your command</div>
             
             <div class="listening-indicator" id="indicator">🎤</div>
             <div class="voice-status" id="voiceStatus">Ready...</div>
             
             <button onclick="startListening()">🎤 Start Listening</button>
             
-            <div class="voice-transcript" id="transcript">Waiting for input...</div>
-            <div class="voice-response" id="response">Click button to begin</div>
+            <div class="voice-transcript" id="transcript">Click to start listening...</div>
+            <div class="voice-response" id="response">Your response will appear here</div>
             
             <div class="debug" id="debug">Debug log...</div>
         </div>
+        
+        <!-- METRICS - ACTIVE -->
+        <div class="section-title">📊 Your Metrics</div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div>CCNA</div>
+                <div class="kpi-value">12%</div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 12%;"></div></div>
+            </div>
+            <div class="kpi-card">
+                <div>Loytex</div>
+                <div class="kpi-value">3K</div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 75%;"></div></div>
+            </div>
+            <div class="kpi-card">
+                <div>FarmLink</div>
+                <div class="kpi-value">FINAL</div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 90%;"></div></div>
+            </div>
+            <div class="kpi-card">
+                <div>School</div>
+                <div class="kpi-value">2:30</div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 100%;"></div></div>
+            </div>
+        </div>
+        
+        <!-- CLAUDE API INTEGRATION - INACTIVE FOR NOW -->
+        <div class="section-title">🤖 AI Features <span class="feature-label" style="margin-left: 10px;">[INACTIVE - Will activate when Claude API key available]</span></div>
+        <div class="feature-inactive" style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <button disabled>🧠 Ask Claude (Claude API)</button>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Will activate when you purchase Claude API key</div>
+        </div>
+        
+        <!-- WEB SEARCH - INACTIVE FOR NOW -->
+        <div class="feature-inactive" style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <button disabled>🔍 Web Search (Web Search API)</button>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Real-time information lookup - coming soon</div>
+        </div>
+        
+        <!-- TASK AUTOMATION - INACTIVE FOR NOW -->
+        <div class="section-title">⚙️ Automation <span class="feature-label" style="margin-left: 10px;">[INACTIVE - Phase 3 feature]</span></div>
+        <div class="feature-inactive" style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <button disabled>🔗 GitHub Integration (Autonomous Commits)</button>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Auto-commit code and deploy - Phase 3</div>
+        </div>
+        
+        <!-- DATA PERSISTENCE - INACTIVE FOR NOW -->
+        <div class="section-title">💾 Data <span class="feature-label" style="margin-left: 10px;">[INACTIVE - Database coming soon]</span></div>
+        <div class="feature-inactive" style="background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+            <button disabled>📈 Real-time Data Sync</button>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 6px;">Sync with FarmLink, Loytex, and other services - database integration pending</div>
+        </div>
+        
     </div>
 
     <script>
-        // USER DATA - ALL IN ONE PLACE
+        // ============================================
+        // USER DATA - Real Time (Can be updated)
+        // ============================================
         const jarvisData = {
+            user: { name: "Griezzy", location: "Kiambu, Nairobi" },
             ccna: { progress: 12, nextTopic: "Network Fundamentals", weeksLeft: 20 },
             loytex: { commission: 3000, monthlyAverage: 6000 },
-            farmlink: { status: "Final stages", priority: "CRITICAL" },
-            schedule: { school: "2:30 PM" }
+            farmlink: { status: "Final stages", priority: "CRITICAL - Complete this week" },
+            schedule: { school: "2:30 PM", timezone: "EAT" }
         };
         
-        // SMART RESPONSES
+        // ============================================
+        // SMART RESPONSE ENGINE
+        // ============================================
         function getSmartResponse(command) {
             const cmd = command.toLowerCase();
             
             if (cmd.includes('ccna')) {
-                return `Your CCNA is at ${jarvisData.ccna.progress}%. Next topic: ${jarvisData.ccna.nextTopic}. You need ${jarvisData.ccna.weeksLeft} weeks. Stay consistent!`;
+                return `Your CCNA is at ${jarvisData.ccna.progress} percent. Next topic: ${jarvisData.ccna.nextTopic}. You need about ${jarvisData.ccna.weeksLeft} weeks. Stay consistent with daily study.`;
             }
             if (cmd.includes('loytex')) {
-                return `You earn ${jarvisData.loytex.commission} Kenyan Shillings from Loytex every 2 weeks. Monthly average: ${jarvisData.loytex.monthlyAverage} Shillings. Great work!`;
+                return `You earn ${jarvisData.loytex.commission} Kenyan Shillings from Loytex every 2 weeks. That's about ${jarvisData.loytex.monthlyAverage} per month. Keep up the excellent work!`;
             }
             if (cmd.includes('farmlink')) {
-                return `FarmLink is in ${jarvisData.farmlink.status}. Priority #1: Complete it fully this week. You're almost there!`;
+                return `FarmLink is in ${jarvisData.farmlink.status}. This is Priority Number 1. You need to complete it fully this week. Once done, you can focus on other projects.`;
             }
             if (cmd.includes('school') || cmd.includes('schedule')) {
-                return `Your school is at ${jarvisData.schedule.school}. Be there on time and manage your study schedule.`;
+                return `Your school is at ${jarvisData.schedule.school}. Make sure you arrive on time and manage your study schedule before then.`;
             }
             if (cmd.includes('progress') || cmd.includes('how')) {
-                return `You're doing great! CCNA at ${jarvisData.ccna.progress}%, earning ${jarvisData.loytex.commission} from Loytex, FarmLink almost done. Focus on completing FarmLink this week!`;
+                return `You're progressing well! CCNA at ${jarvisData.ccna.progress} percent, earning ${jarvisData.loytex.commission} from Loytex, and FarmLink almost complete. Focus on finishing FarmLink this week!`;
             }
-            return `I can help with CCNA, Loytex, FarmLink, your schedule, or your progress. What would you like to know?`;
+            if (cmd.includes('time')) {
+                const now = new Date();
+                return `It's currently ${now.toLocaleTimeString()}. You have school at ${jarvisData.schedule.school}.`;
+            }
+            
+            return `I can help with your CCNA progress, Loytex earnings, FarmLink status, your schedule, or how you're doing. What would you like to know?`;
         }
         
-        // VOICE RECOGNITION
+        // ============================================
+        // VOICE RECOGNITION ENGINE - ACTIVE
+        // ============================================
         const indicator = document.getElementById('indicator');
         const voiceStatus = document.getElementById('voiceStatus');
         const transcript = document.getElementById('transcript');
@@ -166,17 +304,19 @@
         recognition.lang = 'en-US';
         
         const synth = window.speechSynthesis;
-        // Pre-warm voice synthesis on page load
-window.addEventListener('load', () => {
-    const dummy = new SpeechSynthesisUtterance('');
-    synth.speak(dummy);
-    synth.cancel();
-    log('✅ Voice ready');
-});
+        
         let isListening = false;
         let inConversation = false;
         let conversationTimeout = null;
-        const CONVERSATION_DURATION = 120000;
+        const CONVERSATION_DURATION = 120000; // 2 minutes
+        
+        // Pre-warm voice synthesis on page load
+        window.addEventListener('load', () => {
+            const dummy = new SpeechSynthesisUtterance('');
+            synth.speak(dummy);
+            synth.cancel();
+            log('✅ Jarvis voice ready');
+        });
         
         function log(msg) {
             debug.textContent = new Date().toLocaleTimeString() + ' > ' + msg + '\n' + debug.textContent;
@@ -195,8 +335,8 @@ window.addEventListener('load', () => {
         function enterConversationMode() {
             inConversation = true;
             log('✅ Conversation mode (2 min)');
-            voiceStatus.textContent = '💬 Say your command';
-            response.textContent = 'Ready...';
+            voiceStatus.textContent = '💬 Say your command (2 min timeout)';
+            response.textContent = 'Ready for your command...';
             
             if (conversationTimeout) clearTimeout(conversationTimeout);
             conversationTimeout = setTimeout(() => {
@@ -263,55 +403,100 @@ window.addEventListener('load', () => {
             indicator.classList.remove('active');
         });
         
-        function processCommand(command) {
+        // ============================================
+        // COMMAND PROCESSING - ACTIVE
+        // ============================================
+        const BACKEND_URL = 'https://jarvis-backend-syzv.onrender.com';
+        
+        async function processCommand(command) {
             voiceStatus.textContent = 'Processing...';
             
-            // INSTANT local response
-            const reply = getSmartResponse(command);
-            log('Response: ' + reply.substring(0, 40) + '...');
-            response.textContent = reply;
-            
-            speakClear(reply);
+            try {
+                log('Sending to backend: ' + command);
+                const res = await fetch(`${BACKEND_URL}/api/command`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command })
+                });
+                
+                const data = await res.json();
+                const reply = data.response || 'No response received';
+                log('Response received');
+                response.textContent = reply;
+                
+                speakInBackground(reply);
+            } catch (error) {
+                log('❌ Backend error: ' + error.message);
+                response.textContent = '❌ Backend error: ' + error.message;
+                voiceStatus.textContent = 'Error occurred';
+            }
         }
+        
+        // ============================================
+        // TEXT-TO-SPEECH - ACTIVE
+        // ============================================
         function speakInBackground(text) {
-    if (synth.speaking) synth.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    
-    utterance.onstart = () => {
-        log('🔊 Speaking...');
-    };
-    
-    utterance.onend = () => {
-        log('✅ Done');
-        if (inConversation) {
-            voiceStatus.textContent = '💬 Ready for next';
-            startListening();
-        }
-    };
-    
-    synth.speak(utterance);
-}
-        function speakClear(text) {
             if (synth.speaking) synth.cancel();
+            
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 0.95;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
             
+            utterance.onstart = () => {
+                log('🔊 Speaking...');
+            };
+            
             utterance.onend = () => {
-                log('Done - Ready for next');
+                log('✅ Done');
                 if (inConversation) {
-                    voiceStatus.textContent = '💬 Ready for next';
+                    voiceStatus.textContent = '💬 Ready for next command';
                     startListening();
                 }
             };
             
             synth.speak(utterance);
         }
+        
+        // ============================================
+        // FUTURE FEATURES - INACTIVE (Placeholders)
+        // ============================================
+        
+        // CLAUDE API INTEGRATION - Inactive for now
+        // Will be activated when user has Claude API key
+        const CLAUDE_API_DISABLED = true; // Set to false when API key available
+        async function callClaudeAPI(prompt) {
+            if (CLAUDE_API_DISABLED) return null;
+            // Placeholder - will implement when Claude API key is available
+            // const claudeKey = process.env.CLAUDE_API_KEY;
+            // const response = await fetch('https://api.anthropic.com/v1/messages', {...});
+        }
+        
+        // WEB SEARCH - Inactive for now
+        // Will be activated for real-time information
+        const WEB_SEARCH_DISABLED = true;
+        async function searchWeb(query) {
+            if (WEB_SEARCH_DISABLED) return null;
+            // Placeholder - will implement web search API
+        }
+        
+        // GITHUB AUTOMATION - Inactive for now
+        // Phase 3 feature for autonomous code execution
+        const GITHUB_AUTOMATION_DISABLED = true;
+        async function commitToGithub(message, code) {
+            if (GITHUB_AUTOMATION_DISABLED) return null;
+            // Placeholder - will implement GitHub integration
+        }
+        
+        // DATABASE SYNC - Inactive for now
+        // Will sync with FarmLink, Loytex, and other services
+        const DATABASE_SYNC_DISABLED = true;
+        async function syncRealTimeData() {
+            if (DATABASE_SYNC_DISABLED) return null;
+            // Placeholder - will implement real-time data sync
+        }
+        
+        log('🚀 Jarvis initialized - Ready for voice commands');
     </script>
 </body>
 </html>
